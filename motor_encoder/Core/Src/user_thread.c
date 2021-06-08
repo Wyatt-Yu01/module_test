@@ -9,6 +9,8 @@
 
 uint16_t encoder_count;
 uint8_t g_10ms_flag;
+uint8_t g_50ms_flag;
+uint8_t g_100ms_flag;
 uint8_t g_500ms_flag;
 void user_thread_init(void)
 {
@@ -20,7 +22,9 @@ void user_thread(void)
 {
 //    my_printf("hello");
     if(g_10ms_flag) {
+        encoder_count =  __HAL_TIM_GET_COUNTER(&htim4);
         my_printf("count = %d\r\n", encoder_count);
+        __HAL_TIM_SET_COUNTER(&htim4, 0);
         g_10ms_flag = 0;
     }
     if(g_500ms_flag) {
@@ -33,10 +37,14 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
     static uint32_t count = 0;
     if(htim->Instance == htim3.Instance ) {
-        encoder_count =  __HAL_TIM_GET_COUNTER(&htim4);
         count++;
-        g_10ms_flag = 1;
+        if(0 == count % 10) {
+            g_10ms_flag = 1;
+        }
         if(0 == count % 50) {
+            g_50ms_flag = 1;
+        }
+        if(0 == count %500) {
             g_500ms_flag = 1;
         }
     }
@@ -49,5 +57,5 @@ void my_printf(char *format,...)
     va_start(arg, format);
     vsprintf((char *)buffer, format, arg);
     va_end(arg);
-    HAL_UART_Transmit(&huart1, buffer, strlen((const char *)buffer), 0xffff);
+    HAL_UART_Transmit_DMA(&huart1, buffer, strlen((const char *)buffer));
 }
